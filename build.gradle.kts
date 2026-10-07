@@ -1,12 +1,13 @@
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+
 plugins {
     kotlin("jvm") version "2.3.21"
-    kotlin("plugin.spring") version "2.3.21"
-    id("org.springframework.boot") version "4.1.1"
-    id("io.spring.dependency-management") version "1.1.7"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.3.21"
+    id("org.jetbrains.compose") version "1.11.1"
 }
 
 group = "alanpugachev"
-version = "0.0.1-SNAPSHOT"
+version = "0.1.0"
 description = "pyramid_converter"
 
 java {
@@ -17,19 +18,36 @@ java {
 
 repositories {
     mavenCentral()
+    google()
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    implementation(compose.desktop.currentOs)
+    implementation("org.jetbrains.compose.material3:material3:1.9.0")
+
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 kotlin {
     compilerOptions {
-        freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
+        freeCompilerArgs.addAll("-Xjsr305=strict")
+    }
+}
+
+compose.desktop {
+    application {
+        mainClass = "alanpugachev.pyramid_converter.PyramidConverterApplicationKt"
+
+        nativeDistributions {
+            targetFormats(TargetFormat.Dmg)
+            packageName = "Pyramid Converter"
+            packageVersion = "0.1.0"
+
+            macOS {
+                bundleID = "alanpugachev.pyramidconverter"
+            }
+        }
     }
 }
 
