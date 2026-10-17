@@ -1,6 +1,9 @@
 package alanpugachev.pyramid_converter
 
 import alanpugachev.pyramid_converter.enums.FileFormat
+import alanpugachev.pyramid_converter.service.ConversionRouter
+import alanpugachev.pyramid_converter.service.EpubToPdfService
+import alanpugachev.pyramid_converter.service.PdfToEpubService
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,13 +24,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.awt.FileDialog
 import java.awt.Frame
+import java.nio.file.Path
 
 fun main() {
     application {
+        val router = remember { ConversionRouter(listOf(PdfToEpubService(), EpubToPdfService())) }
+        val scope = rememberCoroutineScope()
         var selectedFile by remember { mutableStateOf<String?>(null) }
         var status by remember { mutableStateOf("") }
+        var isConverting by remember { mutableStateOf(false) }
 
         Window(
             onCloseRequest = ::exitApplication,
@@ -49,7 +59,29 @@ fun main() {
                             status = ""
                         },
                         status = status,
-                        onConvert = { status = "Conversion is not implemented yet" },
+                        isConverting = isConverting,
+                        onConvert = {
+                            val detected = FileFormat.fromFile(selectedFile!!)!!
+                            val input = Path.of(selectedFile!!)
+                            val output = input.resolveSibling(
+                                input.fileName.toString().substringBeforeLast('.') +
+                                    "." + detected.target.extensions.first()
+                            )
+                            scope.launch(Dispatchers.IO) {
+                                isConverting = true
+                                status = "Converting..."
+                                try {
+                                    router.serviceFor(detected, detected.target).convert(input, output)
+                                    status = "Saved: ${output.fileName}"
+                                } catch (e: NotImplementedError) {
+                                    status = "${detected.target.displayName} conversion is not implemented yet"
+                                } catch (e: Exception) {
+                                    status = "Error: ${e.message}"
+                                } finally {
+                                    isConverting = false
+                                }
+                            }
+                        },
                     )
                 }
             }
@@ -75,6 +107,7 @@ private fun ConverterScreen(
     filePath: String,
     onChangeFile: () -> Unit,
     status: String,
+    isConverting: Boolean,
     onConvert: () -> Unit,
 ) {
     val fileName = filePath.substringAfterLast('/')
@@ -99,7 +132,10 @@ private fun ConverterScreen(
         } else {
             Text("Detected format: ${detectedFormat.displayName}")
 
-            Button(onClick = onConvert) {
+            Button(
+                onClick = onConvert,
+                enabled = !isConverting,
+            ) {
                 Text("Convert to ${detectedFormat.target.displayName}")
             }
             if (status.isNotEmpty()) {
