@@ -26,6 +26,8 @@ dependencies {
     implementation("org.jetbrains.compose.material3:material3:1.9.0")
     implementation("org.apache.pdfbox:pdfbox:3.0.8")
     implementation("com.positiondev.epublib:epublib-core:3.1")
+    implementation("net.sf.kxml:kxml2:2.3.0")
+    implementation("xmlpull:xmlpull:1.1.3.4d_b4_min")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
